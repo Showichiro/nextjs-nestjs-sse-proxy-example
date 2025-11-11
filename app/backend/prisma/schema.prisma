@@ -22,3 +22,11 @@ model Post {
   author    User?    @relation(fields: [authorId], references: [id])
   authorId  Int?
 }
+
+model Event {
+  id        Int      @default(autoincrement()) @id
+  type      String   // イベントタイプ（connecting, message, complete）
+  message   String   // イベントメッセージ
+  data      String?  // JSONデータ（任意）
+  timestamp DateTime @default(now())
+}

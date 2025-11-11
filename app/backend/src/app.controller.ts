@@ -29,10 +29,7 @@ export class AppController {
 
     console.log(`[GET /events] ${events.length}件のイベントを取得しました`);
 
-    return {
-      total: events.length,
-      events,
-    };
+    return events;
   }
 
   /**
