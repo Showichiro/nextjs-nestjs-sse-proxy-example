@@ -42,6 +42,16 @@ export class AppController {
       let messageCount = 0;
       const maxMessages = 5;
 
+      // 0. 既存のイベントレコードをすべて削除（ノイズ防止）
+      this.prisma.event
+        .deleteMany()
+        .then((result) => {
+          console.log(`[DB削除] ${result.count}件の既存イベントを削除しました`);
+        })
+        .catch((err) => {
+          console.error('[DB削除エラー]:', err);
+        });
+
       // 1. 接続イベント
       const connectingEvent = {
         type: 'connecting',
