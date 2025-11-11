@@ -117,6 +117,13 @@ export default function Home() {
           timestamp: data.timestamp || new Date().toISOString(),
         };
         setEvents((prev) => [...prev, newEvent]);
+
+        // completeイベントを受信したら即座に接続を閉じる
+        if (data.type === 'complete') {
+          eventSource.close();
+          setIsConnecting(false);
+          setEventSourceInstance(null);
+        }
       } catch (error) {
         console.error('Failed to parse SSE data:', error);
       }
@@ -145,17 +152,6 @@ export default function Home() {
       setIsConnecting(false);
       setEventSourceInstance(null);
     };
-
-    // 完了時にクリーンアップ
-    const checkComplete = setInterval(() => {
-      const lastEvent = events[events.length - 1];
-      if (lastEvent?.type === 'complete') {
-        clearInterval(checkComplete);
-        eventSource.close();
-        setIsConnecting(false);
-        setEventSourceInstance(null);
-      }
-    }, 500);
   };
 
   /**
