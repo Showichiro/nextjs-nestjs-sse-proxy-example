@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "last_updated": "2025-11-11T00:00:00Z",
+  "adrs": [
+    {
+      "id": "ADR-0001",
+      "title": "SSE（Server-Sent Events）アーキテクチャパターンの採用",
+      "status": "accepted",
+      "timestamp": "2025-11-11T00:00:00Z",
+      "tags": [
+        "sse",
+        "server-sent-events",
+        "nextjs",
+        "nestjs",
+        "rxjs",
+        "bff",
+        "architecture",
+        "real-time",
+        "event-stream"
+      ],
+      "keywords": [
+        "SSE",
+        "Server-Sent Events",
+        "EventSource",
+        "リアルタイム通信",
+        "イベントストリーム",
+        "RxJS Observable",
+        "Next.js Route Handler",
+        "BFF pattern",
+        "Backend for Frontend"
+      ],
+      "affected_components": [
+        "NestJS SSE Controller",
+        "Next.js Route Handler (Proxy)",
+        "Client Component with EventSource"
+      ],
+      "file_path": "docs/adr/decisions/0001-sse-architecture-pattern.json"
+    }
+  ],
+  "indices": {
+    "by_tag": {
+      "sse": ["ADR-0001"],
+      "server-sent-events": ["ADR-0001"],
+      "nextjs": ["ADR-0001"],
+      "nestjs": ["ADR-0001"],
+      "rxjs": ["ADR-0001"],
+      "bff": ["ADR-0001"],
+      "architecture": ["ADR-0001"],
+      "real-time": ["ADR-0001"],
+      "event-stream": ["ADR-0001"]
+    },
+    "by_component": {
+      "NestJS SSE Controller": ["ADR-0001"],
+      "Next.js Route Handler (Proxy)": ["ADR-0001"],
+      "Client Component with EventSource": ["ADR-0001"]
+    },
+    "by_status": {
+      "accepted": ["ADR-0001"]
+    }
+  }
+}

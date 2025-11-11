@@ -1,0 +1,134 @@
+{
+  "id": "ADR-0001",
+  "timestamp": "2025-11-11T00:00:00Z",
+  "title": "SSE（Server-Sent Events）アーキテクチャパターンの採用",
+  "status": "accepted",
+  "context": {
+    "problem": "Next.js 16フロントエンドからNestJS 11バックエンドへのリアルタイム通信が必要。フロントエンドからバックエンドへの直接呼び出しを禁止し、複数のイベントタイプを送信してUIを切り替える必要がある。",
+    "constraints": [
+      "Next.js 16フロントエンドとNestJS 11バックエンドのMonorepo構成",
+      "フロントエンドからバックエンドへの直接呼び出し禁止",
+      "SSEによる一方向のイベントストリーム",
+      "複数のイベントタイプでUIを動的に切り替え",
+      "標準Web APIの使用を優先"
+    ],
+    "requirements": [
+      "BFF（Backend for Frontend）パターンの実装",
+      "イベントストリーミングの実現",
+      "自動再接続機能",
+      "複数イベントタイプのサポート",
+      "CORS設定の回避"
+    ]
+  },
+  "decision": {
+    "summary": "NestJS SSEエンドポイント + Next.js Route Handler + EventSourceによる3層アーキテクチャを採用",
+    "details": "バックエンド（NestJS）でRxJS Observableを使用したSSEエンドポイントを実装し、Next.js Route Handlerをプロキシ層として配置。フロントエンドではClient ComponentからEventSourceを使用してストリームを受信する。この構成により、BFFパターンの実現、CORS問題の回避、標準Web APIの活用が可能となる。",
+    "alternatives": [
+      {
+        "option": "WebSocket",
+        "pros": ["双方向通信が可能", "より柔軟なデータ送信"],
+        "cons": ["SSEで十分（一方向通信のみ必要）", "接続管理が複雑", "標準APIではない"],
+        "rejected": true,
+        "reason": "一方向通信で十分であり、EventSourceの標準API、自動再接続機能を活用できるSSEが適切"
+      },
+      {
+        "option": "フロントエンドからNestJSへの直接呼び出し",
+        "pros": ["シンプルな構成", "プロキシ層不要"],
+        "cons": ["アーキテクチャ制約に違反", "CORS設定が必要", "BFFパターン非対応"],
+        "rejected": true,
+        "reason": "プロジェクトのアーキテクチャ制約により禁止されている"
+      },
+      {
+        "option": "Polling（定期的なHTTPリクエスト）",
+        "pros": ["実装が単純", "広範なブラウザサポート"],
+        "cons": ["リアルタイム性が低い", "サーバー負荷が高い", "不要なリクエストが発生"],
+        "rejected": true,
+        "reason": "リアルタイム性とサーバー効率の観点でSSEが優位"
+      }
+    ],
+    "rationale": "SSEは一方向のイベントストリームに最適化されており、標準Web API（EventSource）の自動再接続機能を活用できる。Next.js Route Handlerをプロキシとして配置することで、BFFパターンを実現し、CORS設定を回避しつつ、バックエンドとフロントエンドを適切に分離できる。RxJS ObservableはNestJSとの親和性が高く、ストリーム処理に最適。",
+    "consequences": [
+      "【正の影響】標準Web API（EventSource）の使用により、追加ライブラリ不要",
+      "【正の影響】自動再接続機能がブラウザレベルで提供される",
+      "【正の影響】Next.js Route HandlerによりCORS設定不要",
+      "【正の影響】BFFパターンによりバックエンドの変更がフロントエンドに影響しにくい",
+      "【負の影響】一方向通信のみ（双方向通信が必要になった場合は別の技術が必要）",
+      "【負の影響】プロキシ層の追加によりレイテンシがわずかに増加",
+      "【注意事項】EventSourceはGETリクエストのみサポート（POSTが必要な場合は別途考慮が必要）"
+    ]
+  },
+  "implementation": {
+    "affected_files": [
+      "app/backend/src/app.controller.ts",
+      "app/frontend/app/api/sse/route.ts",
+      "app/frontend/app/page.tsx",
+      "app/frontend/app/components/*"
+    ],
+    "affected_components": [
+      "NestJS SSE Controller",
+      "Next.js Route Handler (Proxy)",
+      "Client Component with EventSource"
+    ],
+    "code_patterns": [
+      "NestJS: @Sse() decorator with RxJS Observable",
+      "Next.js: Route Handler with GET method and SSE headers",
+      "Frontend: EventSource API with event listeners"
+    ],
+    "examples": [
+      {
+        "file": "app/backend/src/app.controller.ts",
+        "line_start": 1,
+        "line_end": 30,
+        "description": "NestJS SSEエンドポイント実装例（RxJS Observable使用）"
+      },
+      {
+        "file": "app/frontend/app/api/sse/route.ts",
+        "line_start": 1,
+        "line_end": 20,
+        "description": "Next.js Route Handlerによるプロキシ実装"
+      },
+      {
+        "file": "app/frontend/app/page.tsx",
+        "line_start": 1,
+        "line_end": 40,
+        "description": "EventSourceを使用したClient Component"
+      }
+    ]
+  },
+  "metadata": {
+    "tags": [
+      "sse",
+      "server-sent-events",
+      "nextjs",
+      "nestjs",
+      "rxjs",
+      "bff",
+      "architecture",
+      "real-time",
+      "event-stream"
+    ],
+    "related_adrs": [],
+    "supersedes": null,
+    "superseded_by": null,
+    "author": "AI Assistant",
+    "reviewers": []
+  },
+  "search_keywords": [
+    "SSE",
+    "Server-Sent Events",
+    "EventSource",
+    "リアルタイム通信",
+    "イベントストリーム",
+    "RxJS Observable",
+    "Next.js Route Handler",
+    "BFF pattern",
+    "Backend for Frontend",
+    "プロキシ",
+    "NestJS",
+    "Monorepo",
+    "自動再接続",
+    "event stream",
+    "real-time"
+  ],
+  "vector_embedding": null
+}
