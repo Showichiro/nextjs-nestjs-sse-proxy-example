@@ -124,6 +124,16 @@ export default function Home() {
 
     // エラーハンドリング
     eventSource.onerror = () => {
+      // 正常終了の場合（readyState === CLOSED）は何もしない
+      if (eventSource.readyState === EventSource.CLOSED) {
+        // completeイベントが既に受信されているはず
+        eventSource.close();
+        setIsConnecting(false);
+        setEventSourceInstance(null);
+        return;
+      }
+
+      // 実際のエラーの場合のみエラーイベントを追加
       const errorEvent: SSEEvent = {
         id: `${Date.now()}-error`,
         type: 'error',
