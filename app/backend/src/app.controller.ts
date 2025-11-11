@@ -1,14 +1,38 @@
 import { Controller, Get, Sse } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { AppService } from './app.service';
+import { PrismaService } from './prisma.service';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  /**
+   * 登録されたEventレコードを全件取得するエンドポイント
+   * タイムスタンプの降順でソートして返す
+   */
+  @Get('events')
+  async getEvents() {
+    const events = await this.prisma.event.findMany({
+      orderBy: {
+        timestamp: 'desc',
+      },
+    });
+
+    console.log(`[GET /events] ${events.length}件のイベントを取得しました`);
+
+    return {
+      total: events.length,
+      events,
+    };
   }
 
   /**
@@ -22,38 +46,96 @@ export class AppController {
       const maxMessages = 5;
 
       // 1. 接続イベント
+      const connectingEvent = {
+        type: 'connecting',
+        message: 'SSE接続を確立しています...',
+        timestamp: new Date().toISOString(),
+      };
+
+      // データベースに保存（awaitを使用して成功時にログ出力）
+      this.prisma.event
+        .create({
+          data: {
+            type: connectingEvent.type,
+            message: connectingEvent.message,
+          },
+        })
+        .then((savedEvent) => {
+          console.log(
+            `[DB保存成功] ID: ${savedEvent.id}, Type: ${savedEvent.type}, Message: ${savedEvent.message}`,
+          );
+        })
+        .catch((err) => {
+          console.error('[DB保存エラー] connecting event:', err);
+        });
+
       observer.next({
-        data: JSON.stringify({
-          type: 'connecting',
-          message: 'SSE接続を確立しています...',
-          timestamp: new Date().toISOString(),
-        }),
+        data: JSON.stringify(connectingEvent),
       } as MessageEvent);
 
       // 2. メッセージイベントを定期的に送信
       const interval = setInterval(() => {
         messageCount++;
-        observer.next({
-          data: JSON.stringify({
-            type: 'message',
-            message: `メッセージ ${messageCount}/${maxMessages}`,
+        const messageEvent = {
+          type: 'message',
+          message: `メッセージ ${messageCount}/${maxMessages}`,
+          data: {
+            id: messageCount,
+            content: `サンプルデータ ${messageCount}`,
+            timestamp: new Date().toISOString(),
+          },
+        };
+
+        // データベースに保存（awaitを使用して成功時にログ出力）
+        this.prisma.event
+          .create({
             data: {
-              id: messageCount,
-              content: `サンプルデータ ${messageCount}`,
-              timestamp: new Date().toISOString(),
+              type: messageEvent.type,
+              message: messageEvent.message,
+              data: JSON.stringify(messageEvent.data),
             },
-          }),
+          })
+          .then((savedEvent) => {
+            console.log(
+              `[DB保存成功] ID: ${savedEvent.id}, Type: ${savedEvent.type}, Message: ${savedEvent.message}, Data: ${savedEvent.data}`,
+            );
+          })
+          .catch((err) => {
+            console.error('[DB保存エラー] message event:', err);
+          });
+
+        observer.next({
+          data: JSON.stringify(messageEvent),
         } as MessageEvent);
 
         // 3. 完了イベント
         if (messageCount >= maxMessages) {
           clearInterval(interval);
+          const completeEvent = {
+            type: 'complete',
+            message: 'すべてのイベント送信が完了しました',
+            timestamp: new Date().toISOString(),
+          };
+
+          // データベースに保存（awaitを使用して成功時にログ出力）
+          this.prisma.event
+            .create({
+              data: {
+                type: completeEvent.type,
+                message: completeEvent.message,
+              },
+            })
+            .then((savedEvent) => {
+              console.log(
+                `[DB保存成功] ID: ${savedEvent.id}, Type: ${savedEvent.type}, Message: ${savedEvent.message}`,
+              );
+            })
+            .catch((err) => {
+              console.error('[DB保存エラー] complete event:', err);
+            });
+
           observer.next({
-            data: JSON.stringify({
-              type: 'complete',
-              message: 'すべてのイベント送信が完了しました',
-              timestamp: new Date().toISOString(),
-            }),
+            data: JSON.stringify(completeEvent),
           } as MessageEvent);
           observer.complete();
         }
